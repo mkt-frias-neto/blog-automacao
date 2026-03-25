@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frias Neto — Gerador de Conteúdo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;color:#1a1a1a;min-height:100vh}
+header{background:#1B3F7A;color:#fff;padding:16px 28px;display:flex;align-items:center;gap:12px}
+header h1{font-size:16px;font-weight:600}
+header p{font-size:11px;opacity:.6;margin-top:1px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:calc(100vh - 54px)}
+.sidebar{background:#fff;border-right:1px solid #e8e6e0;padding:20px 16px;display:flex;flex-direction:column;gap:16px;overflow-y:auto}
+.sidebar h2{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:#999;margin-bottom:2px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:500;color:#555}
+.field input,.field select,.field textarea{padding:8px 10px;border:1px solid #e0ddd7;border-radius:7px;font-size:12px;font-family:inherit;background:#fafaf8;color:#1a1a1a}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#1B3F7A}
+.field .hint{font-size:10px;color:#aaa;line-height:1.4}
+.chip-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.chip{padding:8px 10px;border:1.5px solid #e0ddd7;border-radius:7px;cursor:pointer;font-size:11px;font-weight:500;color:#555;background:#fafaf8;transition:all .15s;line-height:1.3}
+.chip:hover{border-color:#1B3F7A;color:#1B3F7A;background:#eef3fb}
+.chip.on{border-color:#1B3F7A;background:#1B3F7A;color:#fff}
+.chip small{display:block;font-size:10px;font-weight:400;opacity:.75;margin-top:1px}
+.opt-row{display:flex;gap:6px}
+.opt{flex:1;padding:8px 10px;border:1.5px solid #e0ddd7;border-radius:7px;cursor:pointer;font-size:11px;font-weight:500;color:#555;background:#fafaf8;transition:all .15s;text-align:center}
+.opt:hover{border-color:#1B3F7A;color:#1B3F7A}
+.opt.on{border-color:#1B3F7A;background:#1B3F7A;color:#fff}
+.divider{height:1px;background:#f0ede7}
+.btn-gen{width:100%;padding:12px;background:#1B3F7A;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s}
+.btn-gen:hover{background:#15336b}
+.btn-gen:disabled{opacity:.4;cursor:not-allowed}
+.main{display:flex;flex-direction:column;overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid #e8e6e0;background:#fff;padding:0 24px}
+.tab{padding:14px 20px;font-size:13px;font-weight:500;color:#888;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.tab:hover{color:#1B3F7A}
+.tab.on{color:#1B3F7A;border-bottom-color:#1B3F7A}
+.tab-badge{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:9px;background:#e8f0fb;color:#1B3F7A;font-size:10px;font-weight:600;margin-left:6px}
+.panel{display:none;flex:1;overflow-y:auto;padding:24px}
+.panel.on{display:block}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;gap:12px;color:#bbb}
+.empty svg{opacity:.3}
+.empty p{font-size:14px}
+.card{background:#fff;border:1px solid #e8e6e0;border-radius:12px;overflow:hidden;margin-bottom:16px}
+.card-head{padding:14px 18px;border-bottom:1px solid #f0ede7;display:flex;align-items:center;justify-content:space-between}
+.card-head h3{font-size:13px;font-weight:600}
+.card-body{padding:18px}
+.steps{display:flex;flex-direction:column;gap:8px}
+.step{display:flex;align-items:center;gap:10px;font-size:13px;color:#666}
+.si{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.s-idle{background:#f0ede7;color:#bbb}
+.s-run{background:#fff8e1;color:#b8860b;animation:pulse 1s infinite}
+.s-ok{background:#d1fae5;color:#065f46}
+.s-err{background:#fee2e2;color:#991b1b}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.preview-title{font-size:22px;font-weight:700;color:#1a1a1a;line-height:1.3;margin-bottom:10px}
+.preview-meta{font-size:12px;color:#999;margin-bottom:20px;display:flex;gap:14px;flex-wrap:wrap}
+.article-body{font-size:14px;line-height:1.8;color:#333}
+.article-body h2{font-size:17px;font-weight:600;margin:24px 0 8px;color:#1a1a1a}
+.article-body h3{font-size:15px;font-weight:600;margin:18px 0 6px;color:#1a1a1a}
+.article-body p{margin-bottom:12px}
+.article-body a{color:#1B3F7A;text-decoration:underline}
+.article-body ul,.article-body ol{padding-left:20px;margin-bottom:12px}
+.article-body li{margin-bottom:5px}
+.article-body strong{font-weight:600}
+.copy-area{background:#f8f8f6;border:1px solid #e8e6e0;border-radius:8px;padding:14px;font-size:11px;font-family:'SF Mono',Monaco,monospace;white-space:pre-wrap;word-break:break-all;max-height:400px;overflow-y:auto;color:#555;line-height:1.6}
+.action-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.btn-copy{padding:10px 18px;background:#1B3F7A;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s}
+.btn-copy:hover{background:#15336b}
+.btn-copy.copied{background:#1d9e75}
+.btn-sec{padding:10px 18px;background:transparent;color:#1B3F7A;border:1.5px solid #1B3F7A;border-radius:7px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s}
+.btn-sec:hover{background:#eef3fb}
+.instructions{background:#eef3fb;border:1px solid #b5d4f4;border-radius:10px;padding:16px;margin-bottom:16px}
+.instructions h4{font-size:13px;font-weight:600;color:#0c447c;margin-bottom:8px}
+.instructions ol{padding-left:18px;font-size:12px;color:#1B3F7A;line-height:1.7}
+.instructions li{margin-bottom:4px}
+.badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.badge-blue{background:#eef3fb;color:#1B3F7A}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.meta-card{background:#f8f8f6;border-radius:8px;padding:10px 12px}
+.meta-card .lbl{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.meta-card .val{font-size:13px;font-weight:600;color:#1a1a1a}
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;color:#fff;z-index:9999;display:none}
+.toast.ok{background:#1d9e75}
+.toast.err{background:#e24b4a}
+.seo-box{background:#f8f8f6;border-radius:8px;padding:14px;margin-bottom:14px}
+.seo-box h4{font-size:12px;font-weight:600;color:#555;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.seo-item{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;font-size:12px}
+.seo-item .lbl{min-width:80px;color:#999;flex-shrink:0}
+.seo-item .val{color:#1a1a1a;word-break:break-word}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.chip-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect width="26" height="26" rx="6" fill="white" fill-opacity=".15"/><path d="M6 19V9l7-4 7 4v10M10 19v-5h6v5" stroke="white" stroke-width="1.7" stroke-linejoin="round"/></svg>
+  <div><h1>Frias Neto — Gerador de Conteúdo para Blog</h1><p>Cria matéria SEO pronta para copiar e colar no WordPress</p></div>
+</header>
+
+<div class="layout">
+
+<aside class="sidebar">
+  <h2>Tema</h2>
+  <div class="chip-grid" id="chips">
+    <div class="chip" onclick="toggleChip(this,'como-comprar-imovel')">Como comprar um imóvel<small>Guia prático</small></div>
+    <div class="chip" onclick="toggleChip(this,'financiamento-fgts')">Financiamento e FGTS<small>Crédito imobiliário</small></div>
+    <div class="chip" onclick="toggleChip(this,'investir-imoveis')">Investir em imóveis<small>Renda e patrimônio</small></div>
+    <div class="chip" onclick="toggleChip(this,'alugar-vs-comprar')">Alugar ou comprar?<small>Análise comparativa</small></div>
+    <div class="chip" onclick="toggleChip(this,'escolher-bairro')">Escolher o bairro<small>Localização ideal</small></div>
+    <div class="chip" onclick="toggleChip(this,'primeiro-imovel')">Primeiro imóvel<small>Para iniciantes</small></div>
+    <div class="chip" onclick="toggleChip(this,'documentacao-compra')">Documentação<small>ITBI, escritura, cartório</small></div>
+    <div class="chip" onclick="toggleChip(this,'mercado-piracicaba')">Mercado em Piracicaba<small>Contexto local</small></div>
+  </div>
+
+  <div class="field">
+    <label>Ou tema personalizado</label>
+    <input type="text" id="custom-topic" placeholder="Ex: home office e valorização do imóvel"/>
+  </div>
+
+  <div class="divider"></div>
+  <h2>Formato</h2>
+  <div class="opt-row" id="fmt">
+    <div class="opt on" onclick="setOpt('fmt',this,'guia')">Guia</div>
+    <div class="opt" onclick="setOpt('fmt',this,'artigo')">Artigo</div>
+    <div class="opt" onclick="setOpt('fmt',this,'lista')">Lista</div>
+  </div>
+
+  <h2>Tom</h2>
+  <div class="opt-row" id="tom">
+    <div class="opt on" onclick="setOpt('tom',this,'consultivo')">Consultivo</div>
+    <div class="opt" onclick="setOpt('tom',this,'acessivel')">Acessível</div>
+    <div class="opt" onclick="setOpt('tom',this,'tecnico')">Técnico</div>
+  </div>
+
+  <div class="divider"></div>
+  <h2>UTM</h2>
+  <div class="field">
+    <label>utm_source</label>
+    <input type="text" id="utm-s" value="site"/>
+  </div>
+  <div class="field">
+    <label>utm_medium</label>
+    <input type="text" id="utm-m" value="blog"/>
+  </div>
+  <div class="field">
+    <label>utm_campaign</label>
+    <input type="text" id="utm-c" placeholder="gerado automaticamente"/>
+  </div>
+
+  <div class="divider"></div>
+  <h2>API Claude</h2>
+  <div class="field">
+    <label>Chave Anthropic</label>
+    <input type="password" id="api-key" placeholder="sk-ant-..."/>
+    <span class="hint">Obtenha em console.anthropic.com</span>
+  </div>
+
+  <button class="btn-gen" id="btn-gen" onclick="generate()">Gerar matéria</button>
+</aside>
+
+<div class="main">
+  <div class="tabs">
+    <div class="tab on" onclick="showTab('progress')">Geração</div>
+    <div class="tab" onclick="showTab('preview')" id="tab-preview">Preview <span class="tab-badge" id="badge-preview" style="display:none">1</span></div>
+    <div class="tab" onclick="showTab('html')" id="tab-html">HTML WordPress <span class="tab-badge" id="badge-html" style="display:none">1</span></div>
+    <div class="tab" onclick="showTab('seo')" id="tab-seo">SEO &amp; Meta <span class="tab-badge" id="badge-seo" style="display:none">1</span></div>
+    <div class="tab" onclick="showTab('guide')">Como publicar</div>
+  </div>
+
+  <div class="panel on" id="panel-progress">
+    <div class="card">
+      <div class="card-head"><h3>Status da geração</h3></div>
+      <div class="card-body">
+        <div class="steps">
+          <div class="step"><div class="si s-idle" id="s1-i">1</div><span id="s1-l">Aguardando — selecione um tema e clique em Gerar</span></div>
+          <div class="step"><div class="si s-idle" id="s2-i">2</div><span id="s2-l">Construindo prompt otimizado para SEO</span></div>
+          <div class="step"><div class="si s-idle" id="s3-i">3</div><span id="s3-l">Gerando matéria com Claude</span></div>
+          <div class="step"><div class="si s-idle" id="s4-i">4</div><span id="s4-l">Inserindo hiperlinks com UTM</span></div>
+          <div class="step"><div class="si s-idle" id="s5-i">5</div><span id="s5-l">Gerando metadados SEO</span></div>
+          <div class="step"><div class="si s-idle" id="s6-i">6</div><span id="s6-l">Pronto para publicar</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Como funciona</h3></div>
+      <div class="card-body" style="font-size:13px;line-height:1.7;color:#555">
+        <p style="margin-bottom:8px">Esta ferramenta gera matérias completas e otimizadas para SEO usando Claude, com hiperlinks e UTMs corretos para o site da Frias Neto.</p>
+        <p style="margin-bottom:8px">Após gerar, você recebe o <strong>HTML pronto</strong> para colar diretamente no editor WordPress.</p>
+        <p>Selecione o tema ao lado, informe sua chave de API do Claude e clique em <strong>Gerar matéria</strong>.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-preview">
+    <div id="preview-empty" class="empty">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <p>A matéria aparece aqui após a geração</p>
+    </div>
+    <div id="preview-content" style="display:none">
+      <div class="meta-grid">
+        <div class="meta-card"><div class="lbl">Palavras</div><div class="val" id="wc">—</div></div>
+        <div class="meta-card"><div class="lbl">Hiperlinks</div><div class="val" id="lc">—</div></div>
+        <div class="meta-card"><div class="lbl">Tempo de leitura</div><div class="val" id="rt">—</div></div>
+        <div class="meta-card"><div class="lbl">Categoria</div><div class="val" id="cat">—</div></div>
+      </div>
+      <div class="preview-title" id="prev-title"></div>
+      <div class="preview-meta" id="prev-meta"></div>
+      <div class="article-body" id="prev-body"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-html">
+    <div id="html-empty" class="empty">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      <p>O HTML aparece aqui após a geração</p>
+    </div>
+    <div id="html-content" style="display:none">
+      <div class="instructions">
+        <h4>Como colar no WordPress</h4>
+        <ol>
+          <li>Abra o WordPress e clique em <strong>Posts → Adicionar novo</strong></li>
+          <li>Clique no botão <strong>+</strong> e adicione um bloco <strong>HTML Personalizado</strong></li>
+          <li>Cole o conteúdo abaixo dentro do bloco</li>
+          <li>Adicione imagem de destaque, tags e categoria</li>
+          <li>Clique em <strong>Publicar</strong></li>
+        </ol>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h3>HTML pronto para WordPress</h3>
+          <span class="badge badge-blue" id="html-size">—</span>
+        </div>
+        <div class="card-body">
+          <div class="copy-area" id="html-out"></div>
+          <div class="action-row">
+            <button class="btn-copy" onclick="copyHtml()">Copiar HTML</button>
+            <button class="btn-sec" onclick="downloadHtml()">Baixar .html</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-seo">
+    <div id="seo-empty" class="empty">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <p>Os metadados SEO aparecem aqui após a geração</p>
+    </div>
+    <div id="seo-content" style="display:none">
+      <div class="card">
+        <div class="card-head"><h3>Metadados para o WordPress</h3></div>
+        <div class="card-body">
+          <div class="seo-box"><h4>Título SEO</h4>
+            <div class="seo-item"><div class="lbl">Título</div><div class="val" id="seo-title"></div></div>
+            <div class="seo-item"><div class="lbl">Caracteres</div><div class="val" id="seo-title-len"></div></div>
+          </div>
+          <div class="seo-box"><h4>Meta description</h4>
+            <div class="seo-item"><div class="lbl">Descrição</div><div class="val" id="seo-desc"></div></div>
+            <div class="seo-item"><div class="lbl">Caracteres</div><div class="val" id="seo-desc-len"></div></div>
+          </div>
+          <div class="seo-box"><h4>Slug</h4>
+            <div class="seo-item"><div class="lbl">URL</div><div class="val" id="seo-slug"></div></div>
+          </div>
+          <div class="seo-box"><h4>Tags sugeridas</h4>
+            <div class="val" id="seo-tags" style="font-size:12px;line-height:1.8"></div>
+          </div>
+          <div class="seo-box"><h4>Sugestão de imagem de destaque</h4>
+            <div class="val" id="seo-img" style="font-size:12px;line-height:1.7;color:#555"></div>
+          </div>
+          <div class="action-row">
+            <button class="btn-copy" onclick="copySeo()">Copiar todos os metadados</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-guide">
+    <div class="instructions" style="margin-bottom:16px">
+      <h4>Passo a passo para publicar</h4>
+      <ol>
+        <li>Gere a matéria usando esta ferramenta</li>
+        <li>Copie o HTML na aba <strong>HTML WordPress</strong></li>
+        <li>Copie os metadados na aba <strong>SEO &amp; Meta</strong></li>
+        <li>Acesse <strong>blog.friasneto.com.br/wp-admin</strong></li>
+        <li>Clique em <strong>Posts → Adicionar novo</strong></li>
+        <li>Clique em <strong>+ → HTML Personalizado</strong> e cole o HTML</li>
+        <li>Preencha Categoria, Tags e Imagem destacada no painel lateral</li>
+        <li>Cole o meta title e meta description no Yoast SEO ou RankMath</li>
+        <li>Defina o slug na URL do post</li>
+        <li>Clique em <strong>Publicar</strong></li>
+      </ol>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Plugin SEO recomendado</h3></div>
+      <div class="card-body" style="font-size:13px;line-height:1.7;color:#555">
+        <p>Instale o <strong>Yoast SEO</strong> ou <strong>RankMath</strong> — ambos gratuitos. Eles adicionam campos de meta title e meta description diretamente na tela de edição do post.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Imagem de destaque</h3></div>
+      <div class="card-body" style="font-size:13px;line-height:1.7;color:#555">
+        <p style="margin-bottom:8px"><strong>Gratuito:</strong> Unsplash (unsplash.com) — busque pelo tema sugerido, baixe e faça upload no WordPress</p>
+        <p><strong>Com IA:</strong> Canva, Adobe Firefly ou Midjourney para imagens exclusivas</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let selectedTopics=[],fmt='guia',tom='consultivo';
+let generatedHTML='',generatedTitle='',seoData={};
+
+function toggleChip(el,slug){
+  el.classList.toggle('on');
+  const label=el.childNodes[0].textContent.trim();
+  if(el.classList.contains('on')){if(!selectedTopics.find(t=>t.slug===slug))selectedTopics.push({slug,label});}
+  else{selectedTopics=selectedTopics.filter(t=>t.slug!==slug);}
+}
+function setOpt(group,el,val){
+  document.querySelectorAll(`#${group} .opt`).forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');
+  if(group==='fmt')fmt=val;if(group==='tom')tom=val;
+}
+function showTab(id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tab')[['progress','preview','html','seo','guide'].indexOf(id)].classList.add('on');
+  document.getElementById('panel-'+id).classList.add('on');
+}
+function setStep(n,state,label){
+  const i=document.getElementById(`s${n}-i`),l=document.getElementById(`s${n}-l`);
+  i.className=`si s-${state}`;i.textContent=state==='ok'?'✓':state==='err'?'✕':n;
+  if(label)l.textContent=label;
+}
+function toast(msg,type='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type}`;t.style.display='block';
+  setTimeout(()=>t.style.display='none',3000);
+}
+function buildPrompt(){
+  const custom=document.getElementById('custom-topic').value.trim();
+  const topics=custom?custom:(selectedTopics.length>0?selectedTopics.map(t=>t.label).join(', '):'mercado imobiliário');
+  const s=document.getElementById('utm-s').value||'site';
+  const m=document.getElementById('utm-m').value||'blog';
+  const campaign=document.getElementById('utm-c').value||(selectedTopics[0]?.slug||'blog-friasneto');
+  const base='https://friasneto.com.br';
+  const u=`utm_source=${s}&utm_medium=${m}&utm_campaign=${campaign}`;
+  const fmtMap={guia:'guia prático com H2s claros, listas e passo a passo',artigo:'artigo educativo aprofundado com argumentação e exemplos',lista:'lista numerada estilo "X razões / dicas / passos para..."'};
+  const tomMap={consultivo:'consultivo e especialista — tom da Frias Neto, maior imobiliária de Piracicaba',acessivel:'acessível e direto, sem jargão, para qualquer pessoa',tecnico:'técnico e detalhado, voltado a investidores e profissionais'};
+  return `Você é o redator sênior do blog da Frias Neto Consultoria de Imóveis — a maior imobiliária de Piracicaba, SP, com mais de 37 anos de mercado.
+
+TEMA: ${topics}
+FORMATO: ${fmtMap[fmt]}
+TOM: ${tomMap[tom]}
+
+REGRAS OBRIGATÓRIAS:
+1. Escreva entre 750 e 950 palavras
+2. Use H1 para o título principal (otimizado para SEO, sem datas ou anos)
+3. Use H2 para seções e H3 para subseções quando necessário
+4. Texto EVERGREEN — sem mencionar anos, datas, taxas ou dados que envelhecem
+5. Insira no mínimo 5 hiperlinks naturais no corpo do texto usando as URLs abaixo
+6. Termine com um parágrafo de CTA convidando a visitar o site ou falar pelo WhatsApp
+
+LINKS DISPONÍVEIS:
+- Site principal: ${base}/?${u}
+- Imóveis à venda: ${base}/pesquisa-de-imoveis/?locacao_venda=V&${u}
+- Imóveis para alugar: ${base}/pesquisa-de-imoveis/?locacao_venda=L&${u}
+- Lançamentos: ${base}/lancamentos/?${u}
+- WhatsApp: ${base}/atendimento-whatsapp?${u}
+- Simulador financiamento: ${base}/simulador-de-financiamento?${u}
+
+RETORNE EXATAMENTE NESTE FORMATO JSON (sem markdown, sem explicações fora do JSON):
+{
+  "html": "<h1>...</h1><p>...</p>...",
+  "seoTitle": "Título SEO até 60 caracteres",
+  "seoDesc": "Meta description entre 140 e 160 caracteres",
+  "slug": "slug-da-materia-sem-acentos",
+  "tags": "tag1, tag2, tag3, tag4, tag5",
+  "imgSuggestion": "Descrição de imagem de destaque para buscar no Unsplash",
+  "category": "Mercado Imobiliário"
+}`;
+}
+async function generate(){
+  const key=document.getElementById('api-key').value.trim();
+  if(!key){toast('Informe a chave de API do Claude','err');return;}
+  const custom=document.getElementById('custom-topic').value.trim();
+  if(selectedTopics.length===0&&!custom){toast('Selecione ao menos um tema','err');return;}
+  if(!document.getElementById('utm-c').value&&selectedTopics[0])document.getElementById('utm-c').value=selectedTopics[0].slug;
+  const btn=document.getElementById('btn-gen');btn.disabled=true;
+  showTab('progress');[1,2,3,4,5,6].forEach(n=>setStep(n,'idle'));
+  try{
+    setStep(1,'run','Preparando requisição...');await sleep(400);setStep(1,'ok','Configuração validada');
+    setStep(2,'run','Construindo prompt SEO...');const prompt=buildPrompt();await sleep(300);setStep(2,'ok','Prompt construído');
+    setStep(3,'run','Gerando matéria com Claude — aguarde...');
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:prompt}]})
+    });
+    if(!res.ok){const e=await res.json();throw new Error(e.error?.message||`Erro API: ${res.status}`);}
+    const data=await res.json();
+    const raw=data.content?.find(b=>b.type==='text')?.text||'';
+    let parsed;
+    try{parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());}
+    catch(e){const m=raw.match(/\{[\s\S]*\}/);if(m)parsed=JSON.parse(m[0]);else throw new Error('Não foi possível parsear a resposta. Tente novamente.');}
+    setStep(3,'ok','Matéria gerada com sucesso');
+    setStep(4,'run','Verificando hiperlinks e UTMs...');
+    generatedHTML=parsed.html||'';
+    const linkCount=(generatedHTML.match(/<a /g)||[]).length;
+    await sleep(400);setStep(4,'ok',`${linkCount} hiperlinks inseridos com UTMs`);
+    setStep(5,'run','Gerando metadados SEO...');
+    seoData={title:parsed.seoTitle||'',desc:parsed.seoDesc||'',slug:parsed.slug||'',tags:parsed.tags||'',img:parsed.imgSuggestion||'',cat:parsed.category||'Mercado Imobiliário'};
+    await sleep(300);setStep(5,'ok','Metadados gerados');
+    setStep(6,'ok','Tudo pronto — veja as abas acima');
+    const titleMatch=generatedHTML.match(/<h1[^>]*>(.*?)<\/h1>/i);
+    generatedTitle=titleMatch?titleMatch[1].replace(/<[^>]+>/g,''):'Matéria gerada';
+    const wordCount=generatedHTML.replace(/<[^>]+>/g,' ').split(/\s+/).filter(Boolean).length;
+    const readTime=Math.ceil(wordCount/200);
+    document.getElementById('wc').textContent=wordCount.toLocaleString('pt-BR');
+    document.getElementById('lc').textContent=linkCount;
+    document.getElementById('rt').textContent=`${readTime} min`;
+    document.getElementById('cat').textContent=seoData.cat;
+    document.getElementById('prev-title').textContent=generatedTitle;
+    document.getElementById('prev-meta').innerHTML=`<span>${wordCount} palavras</span><span>${linkCount} links</span><span>${readTime} min de leitura</span>`;
+    document.getElementById('prev-body').innerHTML=generatedHTML.replace(/<h1[^>]*>.*?<\/h1>/i,'');
+    document.getElementById('preview-empty').style.display='none';
+    document.getElementById('preview-content').style.display='block';
+    document.getElementById('html-out').textContent=generatedHTML;
+    document.getElementById('html-size').textContent=`${(new Blob([generatedHTML]).size/1024).toFixed(1)} KB`;
+    document.getElementById('html-empty').style.display='none';
+    document.getElementById('html-content').style.display='block';
+    document.getElementById('seo-title').textContent=seoData.title;
+    document.getElementById('seo-title-len').textContent=`${seoData.title.length} caracteres ${seoData.title.length<=60?'✓ OK':'⚠ acima do ideal (máx. 60)'}`;
+    document.getElementById('seo-desc').textContent=seoData.desc;
+    document.getElementById('seo-desc-len').textContent=`${seoData.desc.length} caracteres ${seoData.desc.length>=140&&seoData.desc.length<=160?'✓ OK':'⚠ ideal: 140–160'}`;
+    document.getElementById('seo-slug').textContent='/'+seoData.slug;
+    document.getElementById('seo-tags').innerHTML=seoData.tags.split(',').map(t=>`<span class="badge badge-blue" style="margin:2px 4px 2px 0;display:inline-block">${t.trim()}</span>`).join('');
+    document.getElementById('seo-img').textContent=seoData.img;
+    document.getElementById('seo-empty').style.display='none';
+    document.getElementById('seo-content').style.display='block';
+    ['badge-preview','badge-html','badge-seo'].forEach(id=>document.getElementById(id).style.display='inline-flex');
+    toast('Matéria gerada com sucesso!');
+  }catch(e){setStep(3,'err',`Erro: ${e.message}`);toast(e.message,'err');}
+  btn.disabled=false;
+}
+function copyHtml(){
+  navigator.clipboard.writeText(generatedHTML).then(()=>{
+    const btn=document.querySelector('#html-content .btn-copy');
+    btn.textContent='Copiado!';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='Copiar HTML';btn.classList.remove('copied');},2000);
+    toast('HTML copiado!');
+  });
+}
+function downloadHtml(){
+  const slug=seoData.slug||'materia-friasneto';
+  const blob=new Blob([generatedHTML],{type:'text/html'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${slug}.html`;a.click();
+}
+function copySeo(){
+  const txt=`TÍTULO SEO: ${seoData.title}\n\nMETA DESCRIPTION: ${seoData.desc}\n\nSLUG: /${seoData.slug}\n\nTAGS: ${seoData.tags}\n\nIMAGEM SUGERIDA: ${seoData.img}`;
+  navigator.clipboard.writeText(txt).then(()=>toast('Metadados copiados!'));
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+</script>
+</body>
+</html>
